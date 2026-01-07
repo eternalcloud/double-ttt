@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Double Tic‑Tac‑Toe (Free Board)</title>
+  <style>
+    :root{
+      --bg:#0f172a;            /* slate-900 */
+      --card:#111827;          /* gray-900 */
+      --muted:#94a3b8;         /* slate-400 */
+      --text:#e5e7eb;          /* gray-200 */
+      --accent:#22d3ee;        /* cyan-400 */
+      --accent-2:#a78bfa;      /* violet-400 */
+      --danger:#fb7185;        /* rose-400 */
+      --win:#4ade80;           /* green-400 */
+      --draw:#fbbf24;          /* amber-400 */
+      --shadow: 0 10px 25px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+    html, body { height:100%; }
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: radial-gradient(1200px 600px at 80% -10%, rgba(167,139,250,.20), transparent 60%),
+                  radial-gradient(900px 500px at -10% 110%, rgba(34,211,238,.18), transparent 60%),
+                  var(--bg);
+      color:var(--text);
+      display:flex; flex-direction:column; min-height:100%;
+    }
+    header{
+      padding:20px clamp(16px,2vw,28px);
+      display:flex; align-items:center; justify-content:space-between; gap:16px;
+    }
+    .title{ font-weight:800; letter-spacing:.2px; font-size:clamp(20px,2.6vw,28px);}
+    .subtitle{ color:var(--muted); font-size:12px }
+    .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    .btn{
+      appearance:none; border:0; border-radius:999px; padding:10px 14px; cursor:pointer; color:#0b1220; font-weight:700;
+      background:linear-gradient(180deg, var(--accent), #0ea5b7);
+      box-shadow: var(--shadow);
+    }
+    .btn.secondary{
+      background:linear-gradient(180deg, var(--accent-2), #7c3aed);
+      color:#0b1220;
+    }
+    .btn.ghost{
+      background:transparent; color:var(--text); border:1px solid rgba(255,255,255,.18)
+    }
+    .layout{ display:grid; grid-template-columns: 360px 1fr; gap:22px; padding:0 clamp(16px,2vw,28px) 28px; width:100%; max-width:1200px; margin:0 auto; flex:1 }
+    @media (max-width: 980px){ .layout{ grid-template-columns: 1fr; } }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.12);
+      border-radius: var(--radius);
+      padding:18px; box-shadow: var(--shadow);
+    }
+    .section-title{ font-size:14px; letter-spacing:.3px; text-transform:uppercase; color:var(--muted); margin-bottom:8px }
+
+    .players{ display:grid; grid-template-columns: 1fr; gap:14px }
+    .player{
+      display:grid; grid-template-columns: 72px 1fr; gap:14px; align-items:center;
+      background: rgba(2,6,23,.35); border:1px solid rgba(255,255,255,.08); border-radius: 16px; padding:12px;
+    }
+    .avatar{ width:64px; height:64px; border-radius:14px; display:grid; place-items:center; font-size:42px; background:#0b1328; border:1px solid rgba(255,255,255,.08); overflow:hidden }
+    .avatar img{ width:100%; height:100%; object-fit:cover }
+    .picker{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px }
+    .swatch{
+      width:36px; height:36px; border-radius:12px; display:grid; place-items:center; font-size:20px; cursor:pointer;
+      background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1)
+    }
+    .swatch.active{ outline:2px solid var(--accent); outline-offset:2px }
+    .file{ font-size:12px; color:var(--muted); margin-top:8px }
+    .file input{ display:block; width:100% }
+
+    .status{ display:flex; align-items:center; gap:10px; margin-top:8px }
+    .dot{ width:10px; height:10px; border-radius:50% }
+    .p1-dot{ background: var(--accent) }
+    .p2-dot{ background: var(--accent-2) }
+
+    .board-wrap{ display:grid; gap:16px }
+    .board-header{ display:flex; justify-content:space-between; align-items:center; gap:8px }
+    .turn{ display:flex; align-items:center; gap:8px; font-weight:700 }
+    .turn .ico{ width:28px; height:28px; display:grid; place-items:center; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.1); border-radius:8px; overflow:hidden }
+    .turn .ico img{ width:100%; height:100%; object-fit:cover }
+
+    .big-board{
+      --cell: 84px;
+      display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; width:100%; justify-items:stretch;
+    }
+    @media (max-width: 520px){ .big-board{ --cell: 64px; } }
+
+    .mini{
+      display:grid; grid-template-columns: repeat(3, var(--cell)); grid-template-rows: repeat(3, var(--cell)); gap:6px; padding:8px;
+      background: rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.14); border-radius: 14px; position:relative;
+    }
+    .mini.locked{ opacity:.6; filter:saturate(.8); }
+
+    .small-cell{
+      display:grid; place-items:center; font-size: clamp(22px, 5vw, 28px); font-weight:800; cursor:pointer; user-select:none;
+      background: rgba(9,12,23,.66); border:1px solid rgba(255,255,255,.06); border-radius:12px; position:relative; overflow:hidden; transition: transform .08s ease;
+    }
+    .small-cell:hover{ transform: translateY(-2px) }
+    .small-cell img{ width:70%; height:70%; object-fit:contain; pointer-events:none }
+    .small-cell.filled{ cursor:not-allowed; opacity:.95 }
+
+    .winner-badge{
+      position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; border-radius:inherit;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), transparent);
+      border:1px dashed rgba(255,255,255,.14);
+    }
+    .winner-badge .big{ font-size:52px; opacity:.92 }
+    .winner-badge .big img{ width:64px; height:64px; object-fit:contain; filter: drop-shadow(0 8px 20px rgba(0,0,0,.5)); }
+    .winner-badge.p1{ outline:2px solid var(--accent) }
+    .winner-badge.p2{ outline:2px solid var(--accent-2) }
+    .winner-badge.draw{ outline:2px dashed var(--draw) }
+
+    .ribbon{
+      margin-top:8px; font-size:12px; color:var(--muted)
+    }
+    .legend{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; font-size:12px; color:var(--muted) }
+    .legend span{ display:inline-flex; align-items:center; gap:6px }
+
+    .rules ul{ margin:8px 0 0 20px; padding:0 }
+    .rules li{ margin:6px 0 }
+
+    .toast{ position:fixed; left:50%; transform:translateX(-50%); bottom:24px; background:#0b1328; border:1px solid rgba(255,255,255,.18); border-radius:999px; padding:10px 16px; color:var(--text); box-shadow:var(--shadow); display:none }
+    .toast.show{ display:block }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <div class="title">Double Tic‑Tac‑Toe <span style="opacity:.6;font-weight:600">(Free Board)</span></div>
+      <div class="subtitle">Custom icons • Play any mini‑board anytime • Capture 3 mini‑boards in a row to win</div>
+    </div>
+    <div class="controls">
+      <button id="undoBtn" class="btn ghost" title="Undo last move">Undo</button>
+      <button id="newBtn" class="btn" title="Start new game">New Game</button>
+      <button id="saveBtn" class="btn ghost" title="Save current game">Save</button>
+      <button id="loadBtn" class="btn ghost" title="Load saved game">Load</button>
+      <button id="clearBtn" class="btn ghost" title="Delete saved game">Clear</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="card">
+      <div class="section-title">Players & Pieces</div>
+      <div class="players">
+        <div class="player" data-player="1">
+          <div class="avatar" id="p1Preview" aria-label="Player 1 icon">❌</div>
+          <div>
+            <div><strong>Player 1</strong> <span class="status"><span class="dot p1-dot"></span><span id="p1Label">Emoji</span></span></div>
+            <div class="picker" id="p1Picker"></div>
+            <label class="file">Upload image (PNG/JPG/SVG):
+              <input id="p1File" type="file" accept="image/*" />
+            </label>
+          </div>
+        </div>
+        <div class="player" data-player="2">
+          <div class="avatar" id="p2Preview" aria-label="Player 2 icon">⭕</div>
+          <div>
+            <div><strong>Player 2</strong> <span class="status"><span class="dot p2-dot"></span><span id="p2Label">Emoji</span></span></div>
+            <div class="picker" id="p2Picker"></div>
+            <label class="file">Upload image (PNG/JPG/SVG):
+              <input id="p2File" type="file" accept="image/*" />
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="ribbon">Tip: You can mix emoji for one player and a photo/logo for the other. Uploads stay in‑browser (no server).</div>
+      <div style="height:10px"></div>
+      <div class="section-title">Rules</div>
+      <div class="rules">
+        <ul>
+          <li>Board: 3×3 grid of mini tic‑tac‑toe boards (total 81 cells).</li>
+          <li>Turns: Players may play in <em>any</em> mini‑board on their turn.</li>
+          <li>Mini‑board win: First to 3 in a row (row/column/diagonal) captures that mini‑board. Captured boards are locked.</li>
+          <li>Mini‑board draw: If full with no winner, it is locked as a draw (doesn’t help either player for the big win).</li>
+          <li>Game win: First to capture 3 mini‑boards in a row on the big grid wins the match.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="card board-wrap">
+      <div class="board-header">
+        <div class="turn">Turn: <span id="turnIco" class="ico">❌</span> <span id="turnText">Player 1</span></div>
+        <div class="legend">
+          <span><span class="dot p1-dot"></span> Player 1</span>
+          <span><span class="dot p2-dot"></span> Player 2</span>
+          <span>• Captured = outlined mini‑board</span>
+        </div>
+      </div>
+      <div id="bigBoard" class="big-board" aria-label="Double Tic‑Tac‑Toe board"></div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    // ---------- Utility: icons as emoji or image data URLs ----------
+    const DEFAULTS = { p1: {type:'emoji', value:'❌'}, p2: {type:'emoji', value:'⭕'} };
+    const EMOJI_CHOICES = ['❌','⭕','⭐','🔥','🍀','🚀','🦄','🐯','🐉','⚡','🌸','🎯','💎','🍩','🧩'];
+
+    function renderIconEl(icon, className=''){
+      const span = document.createElement(icon?.type === 'image' ? 'span' : 'span');
+      span.className = className;
+      if(!icon || icon.type === 'emoji'){
+        span.textContent = icon?.value || '';
+      }else{
+        const img = document.createElement('img');
+        img.alt = 'icon';
+        img.src = icon.value;
+        span.appendChild(img);
+      }
+      return span;
+    }
+
+    // ---------- Game State ----------
+    const state = {
+      // 9 mini-boards, each with 9 cells (0 empty, 1 P1, 2 P2)
+      boards: Array.from({length:9}, () => Array(9).fill(0)),
+      // winners per mini-board: 0 none, 1 P1, 2 P2, 3 draw
+      winners: Array(9).fill(0),
+      turn: 1, // 1 or 2
+      icons: {1: {...DEFAULTS.p1}, 2: {...DEFAULTS.p2}},
+      history: [],
+      gameOver: false,
+    };
+
+    const bigBoardEl = document.getElementById('bigBoard');
+    const turnIcoEl = document.getElementById('turnIco');
+    const turnTextEl = document.getElementById('turnText');
+    const toastEl = document.getElementById('toast');
+
+    // ---------- Persistence (localStorage) ----------
+    const STORAGE_KEY = 'double-ttt-free-v1';
+    function snapshotGame(){
+      return {
+        boards: state.boards.map(r=>r.slice()),
+        winners: state.winners.slice(),
+        turn: state.turn,
+        gameOver: state.gameOver,
+      };
+    }
+    function saveToStorage(){
+      try{
+        const payload = {...snapshotGame(), icons: state.icons};
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      }catch(e){ console.warn('Save failed', e); }
+    }
+    function tryLoadFromStorage(){
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return false;
+      try{
+        const data = JSON.parse(raw);
+        if(data.boards) state.boards = data.boards;
+        if(data.winners) state.winners = data.winners;
+        state.turn = data.turn ?? 1;
+        state.gameOver = !!data.gameOver;
+        if(data.icons) state.icons = data.icons;
+        renderAll();
+        updatePlayerPreview(1); updatePlayerPreview(2);
+        syncPickerActive();
+        return true;
+      }catch(e){ console.warn('Load failed', e); return false; }
+    }
+
+    // ---------- Build UI: emoji pickers and board ----------
+    function buildPickers(){
+      const p1Picker = document.getElementById('p1Picker');
+      const p2Picker = document.getElementById('p2Picker');
+      p1Picker.replaceChildren();
+      p2Picker.replaceChildren();
+      EMOJI_CHOICES.forEach(e => {
+        const b1 = makeSwatch(e, 1);
+        const b2 = makeSwatch(e, 2);
+        p1Picker.appendChild(b1);
+        p2Picker.appendChild(b2);
+      });
+      syncPickerActive();
+    }
+
+    function makeSwatch(emoji, player){
+      const d = document.createElement('button');
+      d.type = 'button'; d.className = 'swatch'; d.textContent = emoji;
+      d.addEventListener('click', () => {
+        state.icons[player] = {type:'emoji', value:emoji};
+        updatePlayerPreview(player);
+        syncPickerActive();
+        if(!state.gameOver) refreshTurnBadge();
+      });
+      return d;
+    }
+
+    function syncPickerActive(){
+      [1,2].forEach(p => {
+        const picker = document.getElementById(`p${p}Picker`);
+        const current = state.icons[p];
+        [...picker.children].forEach(ch => {
+          ch.classList.toggle('active', current.type==='emoji' && ch.textContent === current.value);
+        });
+      });
+    }
+
+    function updatePlayerPreview(player){
+      const prevEl = document.getElementById(`p${player}Preview`);
+      const labelEl = document.getElementById(`p${player}Label`);
+      prevEl.replaceChildren();
+      prevEl.appendChild(renderIconEl(state.icons[player]));
+      labelEl.textContent = state.icons[player].type === 'emoji' ? 'Emoji' : 'Image';
+    }
+
+    function bindFileInputs(){
+      document.getElementById('p1File').addEventListener('change', (e)=>handleFile(e,1));
+      document.getElementById('p2File').addEventListener('change', (e)=>handleFile(e,2));
+    }
+    function handleFile(e, player){
+      const file = e.target.files?.[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        state.icons[player] = {type:'image', value: reader.result};
+        updatePlayerPreview(player);
+        syncPickerActive();
+        if(!state.gameOver) refreshTurnBadge();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function buildBoard(){
+      bigBoardEl.replaceChildren();
+      for(let b=0; b<9; b++){
+        const mini = document.createElement('div');
+        mini.className = 'mini';
+        mini.dataset.boardIndex = b;
+        for(let c=0; c<9; c++){
+          const cell = document.createElement('div');
+          cell.className = 'small-cell';
+          cell.dataset.boardIndex = b;
+          cell.dataset.cellIndex = c;
+          cell.addEventListener('click', onCellClick);
+          mini.appendChild(cell);
+        }
+        bigBoardEl.appendChild(mini);
+      }
+      renderAll();
+    }
+
+    // ---------- Game Logic ----------
+    const LINES = [
+      [0,1,2],[3,4,5],[6,7,8], // rows
+      [0,3,6],[1,4,7],[2,5,8], // cols
+      [0,4,8],[2,4,6]          // diags
+    ];
+
+    function checkMiniWinner(board){
+      for(const [a,b,c] of LINES){
+        if(board[a] && board[a]===board[b] && board[a]===board[c]) return board[a];
+      }
+      if(board.every(v=>v!==0)) return 3; // draw
+      return 0; // none
+    }
+
+    function checkBigWinner(){
+      // winners: 0 none, 1 P1, 2 P2, 3 draw – only 1 or 2 count
+      for(const [a,b,c] of LINES){
+        const A = state.winners[a], B = state.winners[b], C = state.winners[c];
+        if(A && A===B && A===C && A!==3) return A; // player 1 or 2
+      }
+      return 0;
+    }
+
+    function onCellClick(e){
+      if(state.gameOver) return;
+      const cell = e.currentTarget;
+      const b = +cell.dataset.boardIndex;
+      const c = +cell.dataset.cellIndex;
+      if(state.winners[b]!==0) { showToast('That mini‑board is locked.'); return; }
+      if(state.boards[b][c]!==0) { showToast('That cell is already filled.'); return; }
+
+      // snapshot for undo
+      state.history.push(JSON.stringify(snapshotGame()));
+
+      state.boards[b][c] = state.turn;
+
+      // update mini-board winner/draw
+      const miniWinner = checkMiniWinner(state.boards[b]);
+      if(miniWinner!==0){
+        state.winners[b] = miniWinner; // 1 / 2 / 3(draw)
+      }
+
+      // check big winner
+      const big = checkBigWinner();
+      if(big){
+        state.gameOver = true;
+        renderAll();
+        saveToStorage();
+        const who = big===1 ? 'Player 1' : 'Player 2';
+        showToast(`${who} wins the match!`);
+        return;
+      }
+
+      // if all mini-boards locked and no big winner => full draw
+      if(state.winners.every(w=>w!==0)){
+        state.gameOver = true;
+        renderAll();
+        saveToStorage();
+        showToast('Game ends in a draw.');
+        return;
+      }
+
+      // toggle turn
+      state.turn = state.turn===1 ? 2 : 1;
+      renderAll();
+      saveToStorage();
+    }
+
+    // ---------- Rendering ----------
+    function renderAll(){
+      // cells
+      document.querySelectorAll('.mini').forEach((miniEl, b)=>{
+        const status = state.winners[b];
+        miniEl.classList.toggle('locked', status!==0);
+        // overlay badge
+        const existing = miniEl.querySelector('.winner-badge');
+        if(existing) existing.remove();
+        if(status!==0){
+          const badge = document.createElement('div');
+          badge.className = 'winner-badge ' + (status===1?'p1': status===2?'p2':'draw');
+          const big = renderIconEl(status===3? {type:'emoji', value:'—'} : state.icons[status], 'big');
+          badge.appendChild(big);
+          miniEl.appendChild(badge);
+        }
+        // 9 small cells
+        [...miniEl.children].forEach((cellEl)=>{
+          if(!cellEl.classList.contains('small-cell')) return;
+          const c = +cellEl.dataset.cellIndex;
+          const val = state.boards[b][c];
+          cellEl.replaceChildren();
+          if(val!==0){
+            cellEl.classList.add('filled');
+            cellEl.appendChild(renderIconEl(state.icons[val]));
+          }else{
+            cellEl.classList.remove('filled');
+          }
+        });
+      });
+
+      // turn badge
+      refreshTurnBadge();
+    }
+
+    function refreshTurnBadge(){
+      turnIcoEl.replaceChildren();
+      turnIcoEl.appendChild(renderIconEl(state.icons[state.turn]));
+      turnTextEl.textContent = state.turn===1 ? 'Player 1' : 'Player 2';
+    }
+
+    // ---------- Controls ----------
+    document.getElementById('undoBtn').addEventListener('click', ()=>{
+      if(!state.history.length) { showToast('Nothing to undo.'); return; }
+      const snapshot = state.history.pop();
+      const parsed = JSON.parse(snapshot);
+      // Carefully restore only game-related fields, keep current icons
+      state.boards = parsed.boards; 
+      state.winners = parsed.winners; 
+      state.turn = parsed.turn; 
+      state.gameOver = parsed.gameOver;
+      renderAll();
+      saveToStorage();
+    });
+
+    document.getElementById('newBtn').addEventListener('click', ()=>{
+      // keep player icons, reset board
+      state.boards = Array.from({length:9}, () => Array(9).fill(0));
+      state.winners = Array(9).fill(0);
+      state.turn = 1;
+      state.history = [];
+      state.gameOver = false;
+      renderAll();
+      saveToStorage();
+      showToast('New game started.');
+    });
+
+    // Save/Load/Clear buttons
+    document.getElementById('saveBtn').addEventListener('click', ()=>{ saveToStorage(); showToast('Game saved.'); });
+    document.getElementById('loadBtn').addEventListener('click', ()=>{ if(tryLoadFromStorage()) showToast('Loaded saved game.'); else showToast('No saved game found.'); });
+    document.getElementById('clearBtn').addEventListener('click', ()=>{ localStorage.removeItem(STORAGE_KEY); showToast('Saved game cleared.'); });
+
+    function showToast(msg){
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(()=>toastEl.classList.remove('show'), 1800);
+    }
+
+    // ---------- Init ----------
+    buildPickers();
+    bindFileInputs();
+    updatePlayerPreview(1); updatePlayerPreview(2);
+    buildBoard();
+    tryLoadFromStorage();
+  </script>
+</body>
+</html>
